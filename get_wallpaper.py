@@ -7,8 +7,11 @@ import ctypes
 import urllib
 import os
 
+SUPPORTED_EXTENSIONS = (".jpg", ".png")
+DEFAULT_EXTENSION = ".jpg"
 
 def test_parse_url():
+    #print(parse_url(r"http://i.imgur.com/IC8Oa5T.png"))
     assert parse_url("http://imgur.com/asdf") == "http://imgur.com/asdf.jpg"
     assert parse_url("http://i.imgur.com/asdf") == "http://i.imgur.com/asdf.jpg"
     assert parse_url("penis") is False
@@ -16,16 +19,24 @@ def test_parse_url():
     assert parse_url("http://imgur.com/asdf.jpg") == "http://imgur.com/asdf.jpg"
     assert parse_url("http://i.imgur.com/asdf.jpg") == "http://i.imgur.com/asdf.jpg"
     assert parse_url("http://imgur.com/a/asdf") is False
+    assert parse_url("http://i.imgur.com/asdf.png") == "http://i.imgur.com/asdf.png"
 
 
 def parse_url(url):
-    if re.match("^http://(i.)?imgur.com/(\w)*(\.jpg)?$", url):
+    match_obj = re.match("^http://(i.)?imgur.com/(\w)*(?P<extension>\.jpg|\.png)?$", url)
+    if match_obj:
         # URL looks good. Now add the extension if required.
-        if not re.match("^(.*)\.jpg$", url):
-            url += ".jpg"
-        return url
+
+        if match_obj.group("extension") is None:
+            # No extension. Append the default extension.
+            url += DEFAULT_EXTENSION
+        elif match_obj.group("extension") not in SUPPORTED_EXTENSIONS:
+            url = False
     else:
-        return False
+        # Crap url. Return False.
+        url = False
+
+    return url
 
 
 def change_wallpaper(fullpath):
@@ -33,7 +44,7 @@ def change_wallpaper(fullpath):
 
 if __name__ == '__main__':
 
-    # test_parse_url()
+    test_parse_url()
 
     IMAGE_LOCATION = r"E:\pics\reddit_wallpaper_auto\\"
     # Connect to reddit
@@ -50,10 +61,11 @@ if __name__ == '__main__':
     found = False
 
     for ele in top_post:
-        # pprint.pprint(vars(ele))
+
         image_url = parse_url(ele.url)
         if image_url is not False:
             found = True
+            pprint.pprint(vars(ele))
             break
 
     if found:
